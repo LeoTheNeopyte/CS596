@@ -1,0 +1,7 @@
+I implemented gender recognition with SVM using the sigmoid kernel	
+The file face_to_matrix.py is not needed. I used that file only to resize,
+convert the images to matrices and finally to save those matrices onto 
+a binary filed called faces.npy. Believe me, that file will make your life 
+so much easier since I already grouped training, testing, and the labels
+and added randomness to the data. You only have to load the faces.npy and 
+separate the grouped data as I did in my program.

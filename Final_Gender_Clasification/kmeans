@@ -1,0 +1,127 @@
+from copy import deepcopy
+import cv2
+import numpy as np
+import glob
+import matplotlib.pyplot as plt
+from sklearn.cluster import KMeans
+
+def dist(a, b, ax=1):
+    return np.linalg.norm(a - b, axis=ax)
+
+plt.rcParams['figure.figsize'] = (16, 9)
+plt.style.use('ggplot')
+
+# Variable initialization
+f_trainingset = np.zeros((120, 80))
+m_trainingset = np.zeros((120, 80))
+
+
+# Importing the dataset
+for img in glob.glob('gender-feret/female/training_set/*.jpg'):
+    n = cv2.imread(img, 0)
+    gray_filtered = cv2.inRange(n, 111, 255)
+    binary = 150 >= gray_filtered
+    binary = binary.astype(int)
+    f_trainingset += binary
+
+for img in glob.glob('gender-feret/male/training_set/*.jpg'):
+    n = cv2.imread(img, 0)
+    gray_filtered = cv2.inRange(n, 111, 255)
+    binary = 150 >= gray_filtered
+    binary = binary.astype(int)
+    m_trainingset += binary
+
+n = cv2.imread('gender-feret/male/training_set/0.jpg', 0)
+gray_filtered = cv2.inRange(n, 111, 255)
+
+# reshape date into a 1D array, split it into X and Y cordinates
+X = n.reshape(-1, 1)
+f_x = X
+f_y = [range(0, len(X))]
+
+# Number of clusters
+k = 3
+# X coordinates of random centroids
+C_x = np.random.randint(200, size=3)
+# Y coordinates of random centroids
+C_y = np.random.randint(200, size=3)
+C = np.array(list(zip(C_x, C_y)), dtype=np.float32)
+
+# Plotting along with the Centroids
+plt.scatter(f_x, f_y, c='black', s=4)
+plt.scatter(C_x, C_y, marker='*', c='b')
+
+# To store the value of centroids when it updates
+C_old = np.zeros(C.shape)
+# Cluster Lables(0, 1, 2)
+clusters = np.zeros(len(X))
+# Error func. - Distance between new centroids and old centroids
+error = dist(C, C_old, None)
+# Loop will run till the error becomes zero
+while error != 0:
+    # Assigning each value to its closest cluster
+    for i in range(len(X)):
+        distances = dist(X[i], C)
+        cluster = np.argmin(distances)
+        clusters[i] = cluster
+    # Storing the old centroid values
+    C_old = deepcopy(C)
+    # Finding the new centroids by taking the average value
+    for i in range(k):
+        points = [X[j] for j in range(len(X)) if clusters[j] == i]
+        C[i] = np.mean(points, axis=0)
+    error = dist(C, C_old, None)
+
+
+
+colors = ['r', 'g', 'b', 'y', 'c', 'm']
+fig, ax = plt.subplots()
+for i in range(k):
+        points = np.array([X[j] for j in range(len(X)) if clusters[j] == i])
+        ax.scatter(points[:, 0], points[:, 1], s=7, c=colors[i])
+ax.scatter(C[:, 0], C[:, 1], marker='*', s=200, c='#050505')
+
+# Number of clusters
+kmeansF = KMeans(n_clusters=4)
+kmeansM = KMeans(n_clusters=4)
+# Fitting the input data
+kmeansF = kmeansF.fit(f_trainingset)
+kmeansM = kmeansM.fit(m_trainingset)
+# Getting the cluster labels
+labelsF = kmeansF.predict(f_trainingset)
+labelsM = kmeansM.predict(m_trainingset)
+# Centroid values
+centroidsF = kmeansF.cluster_centers_
+centroidsM = kmeansM.cluster_centers_
+
+compare = centroidsF - centroidsM
+
+centroidsF = centroidsF.reshape(-1, 1).astype(str)
+centroidsM = centroidsM.reshape(-1, 1).astype(str)
+
+# creates a filer per picture and comares it to the training set
+for img in glob.glob('gender-feret/female/training_set/*.jpg'):
+    n = cv2.imread(img, 0)
+    gray_filtered = cv2.inRange(n, 111, 255)
+    binary = 150 >= gray_filtered
+    binary = binary.astype(int)
+    kmeans = KMeans(n_clusters=3)
+    kmeans = kmeans.fit(binary)
+    labels = kmeans.predict(binary)
+    centroids = kmeans.cluster_centers_
+    centroids = centroids.reshape(-1, 1)
+
+    sim_M = difflib.SequenceMatcher(None, centroids, centroidsM)
+    sim_M = difflib.SequenceMatcher(None, centroids, centroidsM)
+
+    if (sim_M > sim_F):
+        print('acuracy')
+        print(sim_M)
+        print('Image is a male')
+    else:
+        print('acuracy')
+        print(sim_M)
+        print('Image is a male')
+
+
+plt.show()
